@@ -40,9 +40,11 @@ import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.StringTokenizer;
 import java.util.concurrent.TimeoutException;
 
@@ -124,7 +126,7 @@ public class ManageIaaS {
 		VcloudClient.setLogLevel(Level.OFF);
 
 		//Login To VMware platform 
-		VcloudClient vcloudClient = authenticate( param );
+		VcloudClient vcloudClient = authenticateauxiliaire( param );
 
 		// Retrieve Organization reference      
 		ReferenceType OrgRef = vcloudClient.getOrgRefByName(param.getOrganization());
@@ -139,7 +141,7 @@ public class ManageIaaS {
 		if(vAppRef!=NullPointerException)    // A vApp exists 
 		{
 			// Retrieve vApp  
-			vcloudClient = authenticate(param);
+			vcloudClient = authenticateauxiliaire(param);
 			Vapp vapp = Vapp.getVappByReference(vcloudClient, vAppRef);
 
 			//1/ If Network exists
@@ -173,7 +175,7 @@ public class ManageIaaS {
 
 					//Retrieving VM
 
-					vcloudClient = authenticate( param);
+					vcloudClient = authenticateauxiliaire( param);
 					vapp = Vapp.getVappByReference(vcloudClient, vapp.getReference());
 					VM VM2 = getVMbyname(vapp,param.getvApptemplate()); //  
 
@@ -196,7 +198,7 @@ public class ManageIaaS {
 
 
 					// Retrieve private and public IP
-					vcloudClient = authenticate( param);
+					vcloudClient = authenticateauxiliaire( param);
 					VM2 = com.vmware.vcloud.sdk.VM.getVMById(vcloudClient,VM2.getReference().getId());
 					NetworkConnectionType nic0= VM2.getNetworkConnections().iterator().next();
 
@@ -244,7 +246,7 @@ public class ManageIaaS {
 				//////////////////guest customization/////////////////////////////////////////////////////
 				//////////////////Login To VMware platform ///////////////////////////////////////////////
 				////////////////// refresh  //////////////////////////////////////////////////////////////
-				vcloudClient = authenticate( param);
+				vcloudClient = authenticateauxiliaire( param);
 
 
 				vapp = Vapp.getVappByReference(vcloudClient, vapp.getReference());
@@ -264,7 +266,7 @@ public class ManageIaaS {
 				
 				// Retrieve private and public IP
 				//// refresh 
-				vcloudClient = authenticate( param);
+				vcloudClient = authenticateauxiliaire( param);
 				VM2 = com.vmware.vcloud.sdk.VM.getVMById(vcloudClient,VM2.getReference().getId());
 				NetworkConnectionType nic0= VM2.getNetworkConnections().iterator().next();
 
@@ -298,7 +300,7 @@ public class ManageIaaS {
 		{
 			// Create the vApp for this CloudPort ACCOUNT
 
-			vcloudClient = authenticate( param);
+			vcloudClient = authenticateauxiliaire( param);
 			Vdc vdc =  ManageIaaS.findVdc(vcloudClient, param.getOrganization(), param.getvDC());
 
 			// finding the vAppTemplate Reference using the vAppTemplate
@@ -337,7 +339,7 @@ public class ManageIaaS {
 			//////////////////guest customization/////////////////////////////////////
 			//////Login To VMware platform ////////////////////////////////////////////
 			//// refresh
-			vcloudClient = authenticate( param);
+			vcloudClient = authenticateauxiliaire( param);
 
 
 			vapp = Vapp.getVappByReference(vcloudClient, vapp.getReference());
@@ -368,7 +370,7 @@ public class ManageIaaS {
 
 			// Retrieve private and public IP
 			//// refresh 
-			vcloudClient = authenticate( param);
+			vcloudClient = authenticateauxiliaire( param);
 			VM1 = com.vmware.vcloud.sdk.VM.getVMById(vcloudClient,VM1.getReference().getId());
 			NetworkConnectionType nic0= VM1.getNetworkConnections().iterator().next();
 
@@ -426,7 +428,7 @@ public class ManageIaaS {
 
 		param.printattributs();
 		////////////Login To VMware platform ////////////////////////////////////////////
-		VcloudClient vcloudClient = authenticate( param);
+		VcloudClient vcloudClient = authenticateauxiliaire( param);
 
 		// Finding a vdc
 		Vdc vdc =ManageIaaS.findVdc(vcloudClient, param.getOrganization(), param.getvDC());
@@ -487,7 +489,7 @@ public class ManageIaaS {
 
 		param.printattributs();
 		////////////Login To VMware platform ////////////////////////////////////////////
-		VcloudClient vcloudClient = authenticate( param);
+		VcloudClient vcloudClient = authenticateauxiliaire( param);
 
 		// Finding a vdc
 		Vdc vdc =ManageIaaS.findVdc(vcloudClient, param.getOrganization(), param.getvDC());
@@ -540,7 +542,7 @@ public class ManageIaaS {
 
 		param.printattributs();
 		////////////Login To VMware platform ////////////////////////////////////////////
-		VcloudClient vcloudClient = authenticate( param);
+		VcloudClient vcloudClient = authenticateauxiliaire( param);
 
 		// Finding a vdc
 		Vdc vdc =ManageIaaS.findVdc(vcloudClient, param.getOrganization(), param.getvDC());
@@ -602,7 +604,7 @@ public class ManageIaaS {
 
 		param.printattributs();
 		////////////Login To VMware platform ////////////////////////////////////////////
-		VcloudClient vcloudClient = authenticate( param);
+		VcloudClient vcloudClient = authenticateauxiliaire( param);
 
 		// Finding a vdc
 		Vdc vdc =ManageIaaS.findVdc(vcloudClient, param.getOrganization(), param.getvDC());
@@ -671,7 +673,7 @@ public class ManageIaaS {
 		param.printattributs();
 
 		//////////// Login To VMware platform ////////////////////////////////////////////
-		VcloudClient vcloudClient = authenticate( param);
+		VcloudClient vcloudClient = authenticateauxiliaire( param);
 
 		// Finding a vdc
 		param.printattributs();
@@ -739,7 +741,7 @@ public class ManageIaaS {
 		param.printattributs();     
 
 		//////////// Login To VMware platform ////////////////////////////////////////////
-		VcloudClient vcloudClient = authenticate( param);
+		VcloudClient vcloudClient = authenticateauxiliaire( param);
 
 		// Finding a vdc
 
@@ -854,7 +856,7 @@ public class ManageIaaS {
 		// TODO Auto-generated method stub
 
 		//// refresh 
-		vcloudClient = authenticate( param);
+		vcloudClient = authenticateauxiliaire( param);
 		// get the to be recomposed vapp reference.
 		Vapp vapp = Vapp.getVappByReference(vcloudClient, vAppRef);
 		String vappNetworkName = vapp.getNetworkConfigSection().getNetworkConfig()
@@ -906,7 +908,7 @@ public class ManageIaaS {
 			ReferenceType vAppRef, vcloud_params param) throws VCloudException, FileNotFoundException, InterruptedException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException {
 		// TODO Auto-generated method stub
 		//// refresh 
-		vcloudClient = authenticate( param);
+		vcloudClient = authenticateauxiliaire( param);
 		// get the to be recomposed vapp reference.
 		Vapp vapp = Vapp.getVappByReference(vcloudClient, vAppRef);
 		String vappNetworkName = vapp.getNetworkConfigSection().getNetworkConfig()
@@ -1024,7 +1026,7 @@ public class ManageIaaS {
 
 
 	//authenticate to VMware Platform//
-	private static  VcloudClient authenticate(vcloud_params param) throws KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, VCloudException 
+	private static  VcloudClient authenticateauxiliaire(vcloud_params param) throws KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, VCloudException 
 	{   
 		// TODO Auto-generated method stub
 		VcloudClient vcloudClient2 = new VcloudClient(param.getHost(), Version.V5_1);
@@ -1034,6 +1036,26 @@ public class ManageIaaS {
 		return vcloudClient2;
 	}
 
+	//authenticate to VMware Platform//
+	private static  VcloudClient authenticate(vcloud_config var) throws KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, VCloudException 
+	{   
+		// TODO Auto-generated method stub
+		VcloudClient vcloudClient2 = new VcloudClient(null, null);
+		 switch (var.getVersion()) {
+         case "":  ;//logger no version;
+         case "v1.5":  vcloudClient2 = new VcloudClient(var.getURL(), Version.V1_5);
+         case "v5.1":  vcloudClient2 = new VcloudClient(var.getURL(), Version.V5_1);
+         case "v5.5":  vcloudClient2 = new VcloudClient(var.getURL(), Version.V5_5);
+                  break;
+         default: break;
+     } 
+		vcloudClient2.registerScheme("https", 443, FakeSSLSocketFactory.getInstance());
+		vcloudClient2.login(var.getUser()+"@"+var.getOrganization(), var.getVcpassword());
+		return vcloudClient2;
+	}
+	
+	
+	
 	/*  ----------------------------------------------------------------------------------  */
 	/*       c o n f i g u r e _ V M s _ I P _ A d d r e s s i n g _ M o d e        */
 	/*  ----------------------------------------------------------------------------------- */
@@ -1650,5 +1672,24 @@ public class ManageIaaS {
 			//System.out.println("    Adding disk failed");
 			System.exit(0);
 		}
+	}
+	public static void get_catalogues(Object[] argsvCconfig) throws Exception,IOException, VCloudException {
+		// TODO Auto-generated method stub
+		vcloud_config config =new vcloud_config(argsvCconfig[0].toString(), argsvCconfig[1].toString(), argsvCconfig[2].toString(), argsvCconfig[3].toString(), argsvCconfig[4].toString());
+		
+		VcloudClient vcloudClient = authenticate( config );
+		
+		HashMap<String, ReferenceType> example = vcloudClient.getOrgRefsByName();
+		
+		for  (Entry<String, ReferenceType> e : example.entrySet()) 
+		{
+			System.out.println(e.getKey()+"="+e.getValue());
+		}
+		
+		
+		
+		//Organization organisation = Organization.getOrganizationByReference(vcloudClient, vcloudClient.getOrgRefsByName()[orgName]);
+		
+		
 	}
 }
