@@ -30,6 +30,7 @@ import javax.xml.namespace.QName;
 
 import java.math.BigInteger;
 
+import com.vmware.vcloud.sdk.admin.EdgeGateway;
 import com.vmware.vcloud.sdk.constants.*;
 
 import java.io.FileNotFoundException;
@@ -69,6 +70,7 @@ import com.vmware.vcloud.api.rest.schema.NetworkFeaturesType;
 import com.vmware.vcloud.api.rest.schema.NetworkServiceType;
 import com.vmware.vcloud.api.rest.schema.ObjectFactory;
 import com.vmware.vcloud.api.rest.schema.RecomposeVAppParamsType;
+import com.vmware.vcloud.api.rest.schema.ReferencesType;
 import com.vmware.vcloud.api.rest.schema.SourcedCompositionItemParamType;
 import com.vmware.vcloud.api.rest.schema.StaticRouteType;
 import com.vmware.vcloud.api.rest.schema.StaticRoutingServiceType;
@@ -79,11 +81,14 @@ import com.vmware.vcloud.api.rest.schema.ovf.MsgType;
 import com.vmware.vcloud.api.rest.schema.ovf.NetworkSectionNetwork;
 import com.vmware.vcloud.api.rest.schema.ovf.RASDType;
 import com.vmware.vcloud.api.rest.schema.ovf.SectionType;
+import com.vmware.vcloud.sdk.CatalogItem;
 import com.vmware.vcloud.sdk.Organization;
+import com.vmware.vcloud.sdk.ReferenceResult;
 import com.vmware.vcloud.sdk.Task;
 import com.vmware.vcloud.sdk.VCloudException;
 import com.vmware.vcloud.sdk.VM;
 import com.vmware.vcloud.sdk.Vapp;
+import com.vmware.vcloud.sdk.VappTemplate;
 import com.vmware.vcloud.sdk.VcloudClient;
 import com.vmware.vcloud.sdk.Vdc;
 import com.vmware.vcloud.sdk.constants.FenceModeValuesType;
@@ -101,6 +106,7 @@ public class ManageIaaS {
 	private static final 	 ReferenceType NullPointerException = null;
 	public static    		 VcloudClient vcloudClient;
 	static final     		 Logger logger = LogManager.getLogger(ManageIaaS.class.getName());
+	
 	public ManageIaaS() { }      						// default constructor
 	public static Object start_server(Object[] args) throws Exception,IOException, VCloudException
 	{
@@ -207,7 +213,7 @@ public class ManageIaaS {
 						param.setpublicadd(nic0.getExternalIpAddress());
 						param.setprivadd(nic0.getIpAddress());
 					}
-					
+
 					// retrieve MAC address
 					param.setMACaddress(VM2.getNetworkConnections().iterator().next().getMACAddress());
 
@@ -219,7 +225,7 @@ public class ManageIaaS {
 					param.setStatus(VM2.getVMStatus().toString());
 					System.out.println("VM2.getResource().getId()"+VM2.getResource().getId());
 					param.setVMId(VM2.getResource().getId());
-					
+
 					// Update Network rules
 					//updateNetworkRules(vapp,param,Network);
 				}
@@ -260,10 +266,10 @@ public class ManageIaaS {
 				VM2.powerOn().waitForTask(1000000, 10000);
 
 				// waiting for OS to boot 
-			//	while (!(VM2.getVMStatus().toString().equals("POWERED_ON") ))
+				//	while (!(VM2.getVMStatus().toString().equals("POWERED_ON") ))
 				Thread.sleep(BOOT_DELAY); 
 
-				
+
 				// Retrieve private and public IP
 				//// refresh 
 				vcloudClient = authenticateauxiliaire( param);
@@ -276,7 +282,7 @@ public class ManageIaaS {
 					param.setprivadd(nic0.getIpAddress());
 				}
 
-			
+
 				// retrieve MAC address
 				param.setMACaddress(VM2.getNetworkConnections().iterator().next().getMACAddress());
 
@@ -362,7 +368,7 @@ public class ManageIaaS {
 
 			//Powering on the VM
 			VM1.powerOn().waitForTask(1000000, 10000);
- 
+
 			// waiting for OS to boot 
 			//while (!(VM1.getVMStatus().toString().equals("POWERED_ON") ))
 			Thread.sleep(BOOT_DELAY); 
@@ -398,7 +404,7 @@ public class ManageIaaS {
 				nic0.setExternalIpAddress("0.0.0.0");
 
 			}
-			
+
 			// Update Network rules
 			//updateNetworkRules(vapp,param,Network);
 		}
@@ -623,7 +629,7 @@ public class ManageIaaS {
 		case "3" :   // VM status: SUSPENDED
 			System.out.println("VMdel.getResource().getStatus()= " + VMresume.getResource().getStatus());
 			VMresume.powerOn().waitForTask(1000000, 1000);
-		//	while (!(VMresume.getVMStatus().toString().equals("POWERED_ON") ))
+			//	while (!(VMresume.getVMStatus().toString().equals("POWERED_ON") ))
 			Thread.sleep(BOOT_DELAY); 
 			System.out.println("VMresume.getResource().getStatus()="+VMresume.getResource().getStatus());
 			param.setStatus(VMresume.getVMStatus().toString());
@@ -697,7 +703,7 @@ public class ManageIaaS {
 			logger.warn("HARD REBOOTING Virtual Machine ");
 			VMreb.undeploy(UndeployPowerActionType.POWEROFF).waitForTask(1000000, 1000);
 			VMreb.powerOn().waitForTask(1000000, 1000);
-		//	while (!(VMreb.getVMStatus().toString().equals("POWERED_ON") ))
+			//	while (!(VMreb.getVMStatus().toString().equals("POWERED_ON") ))
 			Thread.sleep(BOOT_DELAY); 
 			param.setStatus(VMreb.getVMStatus().toString());
 			//VMdel.delete().waitForTask(1000000, 1000);
@@ -706,7 +712,7 @@ public class ManageIaaS {
 		case "8" : // VM status POWERED_OFF
 			logger.warn("VM is POWERED_OFF, It will be started ");
 			VMreb.powerOn().waitForTask(1000000, 1000);
-		//	while (!(VMreb.getVMStatus().toString().equals("POWERED_ON") ))
+			//	while (!(VMreb.getVMStatus().toString().equals("POWERED_ON") ))
 			Thread.sleep(BOOT_DELAY); 
 			param.setStatus(VMreb.getVMStatus().toString());
 			break;
@@ -783,9 +789,9 @@ public class ManageIaaS {
 
 			if(vappd.getChildrenVms().isEmpty())
 			{       
-			System.out.println("delete vApp with network");
-			vappd.undeploy(UndeployPowerActionType.POWEROFF).waitForTask(1000000, 1000);
-			vappd.delete().waitForTask(1000000, 1000);
+				System.out.println("delete vApp with network");
+				vappd.undeploy(UndeployPowerActionType.POWEROFF).waitForTask(1000000, 1000);
+				vappd.delete().waitForTask(1000000, 1000);
 			}
 			param.setStatus("DELETED");
 		}
@@ -1040,22 +1046,23 @@ public class ManageIaaS {
 	private static  VcloudClient authenticate(vcloud_config var) throws KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, VCloudException 
 	{   
 		// TODO Auto-generated method stub
-		VcloudClient vcloudClient2 = new VcloudClient(null, null);
-		 switch (var.getVersion()) {
-         case "":  ;//logger no version;
-         case "v1.5":  vcloudClient2 = new VcloudClient(var.getURL(), Version.V1_5);
-         case "v5.1":  vcloudClient2 = new VcloudClient(var.getURL(), Version.V5_1);
-         case "v5.5":  vcloudClient2 = new VcloudClient(var.getURL(), Version.V5_5);
-                  break;
-         default: break;
-     } 
+		Version a = null;
+
+		switch (var.getVersion()) {
+		case "1.5":  a=Version.V1_5;
+		case "5.1":  a=Version.V5_1;
+		case "5.5":  a=Version.V5_5;
+		break;
+		default: break;
+		}
+
+		VcloudClient vcloudClient2 = new VcloudClient(var.getURL(), a );
 		vcloudClient2.registerScheme("https", 443, FakeSSLSocketFactory.getInstance());
 		vcloudClient2.login(var.getUser()+"@"+var.getOrganization(), var.getVcpassword());
 		return vcloudClient2;
 	}
-	
-	
-	
+
+
 	/*  ----------------------------------------------------------------------------------  */
 	/*       c o n f i g u r e _ V M s _ I P _ A d d r e s s i n g _ M o d e        */
 	/*  ----------------------------------------------------------------------------------- */
@@ -1244,19 +1251,19 @@ public class ManageIaaS {
 		// }
 		// adding firewall rules
 		List<FirewallRuleType> fwRules = firewallServiceType.getFirewallRule();
-		
+
 		// Protecting Prologue 's Internal Network 
 		if (vdc.getReference().getName().equals("vDC_prologue"))
 		{
-	    addFirewallRule(fwRules, "Allow GW access", "ANY", "internal", "172.17.138.89", "Any",FirewallPolicyType.ALLOW.value());
-	    addFirewallRule(fwRules, "Allow pool IP", "ANY", "internal", "172.17.117.110-172.17.117.140", "Any",FirewallPolicyType.ALLOW.value());
-	    addFirewallRule(fwRules, "Protect Prologue's Internal Network", "ANY", "internal", "172.17.117.120", "Any",FirewallPolicyType.DROP.value());	    
-	    addFirewallRule(fwRules, "Protect Prologue's Internal Network", "ANY", "internal", "172.17.0.0/16", "Any",FirewallPolicyType.DROP.value());
-		addFirewallRule(fwRules, "Protect Prologue's Internal Network", "ANY", "internal", "172.31.0.0/16", "Any",FirewallPolicyType.DROP.value());
-		addFirewallRule(fwRules, "Protect Prologue's Internal Network", "ANY", "internal", "192.168.43.0/24", "Any",FirewallPolicyType.DROP.value());
-		addFirewallRule(fwRules, "Protect Prologue's Internal Network", "ANY", "internal", "192.168.40.0/24", "Any",FirewallPolicyType.DROP.value());
+			addFirewallRule(fwRules, "Allow GW access", "ANY", "internal", "172.17.138.89", "Any",FirewallPolicyType.ALLOW.value());
+			addFirewallRule(fwRules, "Allow pool IP", "ANY", "internal", "172.17.117.110-172.17.117.140", "Any",FirewallPolicyType.ALLOW.value());
+			addFirewallRule(fwRules, "Protect Prologue's Internal Network", "ANY", "internal", "172.17.117.120", "Any",FirewallPolicyType.DROP.value());	    
+			addFirewallRule(fwRules, "Protect Prologue's Internal Network", "ANY", "internal", "172.17.0.0/16", "Any",FirewallPolicyType.DROP.value());
+			addFirewallRule(fwRules, "Protect Prologue's Internal Network", "ANY", "internal", "172.31.0.0/16", "Any",FirewallPolicyType.DROP.value());
+			addFirewallRule(fwRules, "Protect Prologue's Internal Network", "ANY", "internal", "192.168.43.0/24", "Any",FirewallPolicyType.DROP.value());
+			addFirewallRule(fwRules, "Protect Prologue's Internal Network", "ANY", "internal", "192.168.40.0/24", "Any",FirewallPolicyType.DROP.value());
 		}
-		
+
 		Iterator<FirewallRule> aux = firewallRulles.iterator();
 		while (aux.hasNext())
 		{
@@ -1283,10 +1290,10 @@ public class ManageIaaS {
 		addFirewallRule(fwRules, "In-Out", "ANY", "internal", "external", "Any",FirewallPolicyType.ALLOW.value());
 		//name,protocol,srcIp,dstIp,portRange)
 
-	
-		
-		
-		
+
+
+
+
 		JAXBElement<FirewallServiceType> firewall = (new ObjectFactory())
 				.createFirewallService(firewallServiceType);
 		networkService.add(firewall);
@@ -1331,14 +1338,14 @@ public class ManageIaaS {
 		NetworkConfigSectionType networkConfigSectionType = new NetworkConfigSectionType();
 		MsgType networkInfo = new MsgType();
 		networkConfigSectionType.setInfo(networkInfo);
-		
+
 		List<VAppNetworkConfigurationType> vAppNetworkConfigs = networkConfigSectionType.getNetworkConfig();
 		vAppNetworkConfigs.add(vAppNetworkConfigurationType);	
-		
+
 		//
 		// fill in remaining InstantititonParams (name, Source)
 		//
-		
+
 		InstantiationParamsType instantiationParamsType = new InstantiationParamsType();
 		List<JAXBElement<? extends SectionType>> sections = instantiationParamsType.getSection();
 		sections.add(new ObjectFactory().createNetworkConfigSection(networkConfigSectionType));
@@ -1372,11 +1379,11 @@ public class ManageIaaS {
 		firewallRuleType.setDescription(name);
 		firewallRuleType.setSourceIp(srcIp);
 		firewallRuleType.setSourcePort(-1);
-		
+
 		firewallRuleType.setPolicy(policy);
-		
-		
-		
+
+
+
 		firewallRuleType.setDestinationIp(dstIp);
 		FirewallRuleProtocols protocols = new FirewallRuleProtocols();
 		if (protocol.equalsIgnoreCase("ICMP")) {
@@ -1409,64 +1416,64 @@ public class ManageIaaS {
 	private static void updateNetworkRules(Vapp vapp, vcloud_params param, vApp_Network network) throws VCloudException 
 	{
 		// TODO Auto-generated Method Stub
-		
+
 		List<VAppNetworkConfigurationType> NetworkConfig = vapp.getNetworkConfigSection().getNetworkConfig();
-		
-		
+
+
 		for(int i = 0; i < NetworkConfig.size() ; i++ )
 		{	
-		VAppNetworkConfigurationType vAppNetworkconfigurationtype = NetworkConfig.get(i);
-		
-		NetworkConfigurationType networkconfigurationtype = vAppNetworkconfigurationtype.getConfiguration();		
-		System.out.println("Network Name   "+vAppNetworkconfigurationtype.getNetworkName());
-		
-		if(vAppNetworkconfigurationtype.getNetworkName().equals(network.getvAppNetName1()))
-		{
-		
-		 NetworkFeaturesType templateFeatures = networkconfigurationtype.getFeatures();
-		 List<JAXBElement<? extends NetworkServiceType>> networkservicetype = templateFeatures.getNetworkService();
-		 
-		 System.out.println("networkservicetype    "+networkservicetype.size());
-		 
-		// for (JAXBElement<? extends NetworkServiceType> ns : networkservicetype)
-		 for( i = 0; i < networkservicetype.size() ; i++)
-		{
-			 if(networkservicetype.get(i).getDeclaredType().getName().contains("FirewallServiceType"))
-			 {
-				 
-				  FirewallServiceType firewallService = (FirewallServiceType) networkservicetype.get(i).getValue();
-				  for(int j=0;j<firewallService.getFirewallRule().size();j++)
-				  {	  
-				  FirewallRuleType rule = firewallService.getFirewallRule().get(j);
-				  rule.setDestinationIp(param.getpublicadd());
-				  System.out.println("rule description"+rule.getDescription());
-				  System.out.println("rule DestinationIp"+rule.getDestinationIp());	 
-				  }
-				  networkservicetype.remove(firewallService);
-				  networkservicetype.add(new ObjectFactory().createFirewallService(firewallService));
-				  break;
-				  
-			 }
-			 networkconfigurationtype .setFeatures(templateFeatures);
-			 
-			 List<VAppNetworkConfigurationType> h = vapp.getNetworkConfigSection().getNetworkConfig();
-			 
-			 for ( int k = 0 ;k < 0 ; k++ )
-			 
-			 { 
-			  if (h.get(k).getNetworkName().equals(network.getvAppNetName1()))
-			   h.get(0).setConfiguration(networkconfigurationtype);
-			 }
-			 
-			 vapp.updateSection(vapp.getNetworkConfigSection());
-		 }
-		  
-		  
-		}
+			VAppNetworkConfigurationType vAppNetworkconfigurationtype = NetworkConfig.get(i);
+
+			NetworkConfigurationType networkconfigurationtype = vAppNetworkconfigurationtype.getConfiguration();		
+			System.out.println("Network Name   "+vAppNetworkconfigurationtype.getNetworkName());
+
+			if(vAppNetworkconfigurationtype.getNetworkName().equals(network.getvAppNetName1()))
+			{
+
+				NetworkFeaturesType templateFeatures = networkconfigurationtype.getFeatures();
+				List<JAXBElement<? extends NetworkServiceType>> networkservicetype = templateFeatures.getNetworkService();
+
+				System.out.println("networkservicetype    "+networkservicetype.size());
+
+				// for (JAXBElement<? extends NetworkServiceType> ns : networkservicetype)
+				for( i = 0; i < networkservicetype.size() ; i++)
+				{
+					if(networkservicetype.get(i).getDeclaredType().getName().contains("FirewallServiceType"))
+					{
+
+						FirewallServiceType firewallService = (FirewallServiceType) networkservicetype.get(i).getValue();
+						for(int j=0;j<firewallService.getFirewallRule().size();j++)
+						{	  
+							FirewallRuleType rule = firewallService.getFirewallRule().get(j);
+							rule.setDestinationIp(param.getpublicadd());
+							System.out.println("rule description"+rule.getDescription());
+							System.out.println("rule DestinationIp"+rule.getDestinationIp());	 
+						}
+						networkservicetype.remove(firewallService);
+						networkservicetype.add(new ObjectFactory().createFirewallService(firewallService));
+						break;
+
+					}
+					networkconfigurationtype .setFeatures(templateFeatures);
+
+					List<VAppNetworkConfigurationType> h = vapp.getNetworkConfigSection().getNetworkConfig();
+
+					for ( int k = 0 ;k < 0 ; k++ )
+
+					{ 
+						if (h.get(k).getNetworkName().equals(network.getvAppNetName1()))
+							h.get(0).setConfiguration(networkconfigurationtype);
+					}
+
+					vapp.updateSection(vapp.getNetworkConfigSection());
+				}
+
+
+			}
 
 		}	
 	}
-	
+
 
 	public static Vapp newvAppFromTemplate(ReferenceType vAppTemplateReference,
 			Vdc vdc, String vApp_name) throws VCloudException {
@@ -1673,23 +1680,209 @@ public class ManageIaaS {
 			System.exit(0);
 		}
 	}
-	public static void get_catalogues(Object[] argsvCconfig) throws Exception,IOException, VCloudException {
+	public static Object get_catalogues(Object[] argsvCconfig) throws Exception,IOException, VCloudException {
 		// TODO Auto-generated method stub
 		vcloud_config config =new vcloud_config(argsvCconfig[0].toString(), argsvCconfig[1].toString(), argsvCconfig[2].toString(), argsvCconfig[3].toString(), argsvCconfig[4].toString());
-		
-		VcloudClient vcloudClient = authenticate( config );
-		
-		HashMap<String, ReferenceType> example = vcloudClient.getOrgRefsByName();
-		
-		for  (Entry<String, ReferenceType> e : example.entrySet()) 
+
+		VcloudClient vcloudClient = authenticate( config );	
+		//for  (Entry<String, ReferenceType> e : example.entrySet()) 
+		//{
+		//	System.out.println(e.getKey()+"="+e.getValue());
+		//}
+
+		HashMap<String, ReferenceType> OrgRefs = vcloudClient.getOrgRefsByName();
+		Organization organisation = Organization.getOrganizationByReference(vcloudClient, OrgRefs.get(config.getOrganization()));
+
+		Collection<ReferenceType> catalogueRef = organisation.getCatalogRefs();
+		String[] catalogues = new String[catalogueRef.size()];
+		Iterator<ReferenceType> catalogueRefit = catalogueRef.iterator();
+		for (int i=0;i<catalogueRef.size();i++) 
 		{
-			System.out.println(e.getKey()+"="+e.getValue());
+			catalogues[i]=catalogueRefit.next().getName();
 		}
+		return catalogues;
+	}
+
+	public static String[] get_vDCs(Object[] argsvCconfig) throws Exception,IOException, VCloudException{
+
+		// TODO Auto-generated method stub
+		vcloud_config config =new vcloud_config(argsvCconfig[0].toString(), argsvCconfig[1].toString(), argsvCconfig[2].toString(), argsvCconfig[3].toString(), argsvCconfig[4].toString());
+		VcloudClient vcloudClient = authenticate( config );	
+
+		HashMap<String, ReferenceType> OrgRefs = vcloudClient.getOrgRefsByName();
+		Organization organisation = Organization.getOrganizationByReference(vcloudClient, OrgRefs.get(config.getOrganization()));	
+
+
+		Collection<ReferenceType> vDCRef = organisation.getVdcRefs();
+		String[] vDCs = new String[vDCRef.size()];
+		Iterator<ReferenceType> vDCsRefit = vDCRef.iterator();
+		for (int i=0;i<vDCRef.size();i++) 
+		{
+			vDCs[i]=vDCsRefit.next().getName();
+
+		}
+		return vDCs;
+
+	}
+	public static String[] get_vApptemplatepervDC(Object[] argsvCconfig)throws Exception,IOException, VCloudException 
+	{
+
+		// TODO Auto-generated method stub
+		vcloud_config config =new vcloud_config(argsvCconfig[0].toString(), argsvCconfig[1].toString(), argsvCconfig[2].toString(), argsvCconfig[3].toString(), argsvCconfig[4].toString());
+		String vDCname=argsvCconfig[5].toString();
+		VcloudClient vcloudClient = authenticate( config );	
+		//for  (Entry<String, ReferenceType> e : example.entrySet()) 
+		//{
+		//	System.out.println(e.getKey()+"="+e.getValue());
+		//}
+
+		List<String> list = new ArrayList<String>();
+
+		HashMap<String, ReferenceType> OrgRefs = vcloudClient.getOrgRefsByName();
+		Organization organisation = Organization.getOrganizationByReference(vcloudClient, OrgRefs.get(config.getOrganization()));
+
+
+
+		Collection<ReferenceType> vDCRef = organisation.getVdcRefs();
+		ReferenceType vDCref = organisation.getVdcRefByName(vDCname);
+		Vdc vdc = Vdc.getVdcByReference(vcloudClient, vDCref) ;
+		Collection<ReferenceType> vapptemplateRef = vdc.getVappTemplateRefs();
+		Iterator<ReferenceType> itvapptemplateRef = vapptemplateRef.iterator();
+
+		for(int j=0;j<vapptemplateRef.size();j++)
+		{
+			String name=itvapptemplateRef.next().getName();
+			//System.out.println(name);
+			list.add(name);
+
+		}
+
+
+		String[] vapptemplates = new String[list.size()];
+		vapptemplates = (String[]) list.toArray(vapptemplates);
+
+		return (vapptemplates);
+	}
+
+	public static String[] get_EDGEpervDC(Object[] argsvCconfig) throws Exception,IOException, VCloudException 
+	{
+		// TODO Auto-generated method stub
+		vcloud_config config =new vcloud_config(argsvCconfig[0].toString(), argsvCconfig[1].toString(), argsvCconfig[2].toString(), argsvCconfig[3].toString(), argsvCconfig[4].toString());
+		String vDCname=argsvCconfig[5].toString();
+
+		VcloudClient vcloudClient = authenticate( config );	
+		//for  (Entry<String, ReferenceType> e : example.entrySet()) 
+		//{
+		//	System.out.println(e.getKey()+"="+e.getValue());
+		//}
+
+		List<String> list = new ArrayList<String>();
+
+		HashMap<String, ReferenceType> OrgRefs = vcloudClient.getOrgRefsByName();
+		Organization organisation = Organization.getOrganizationByReference(vcloudClient, OrgRefs.get(config.getOrganization()));
+
+
+		Collection<ReferenceType> vDCRef = organisation.getVdcRefs();
+		ReferenceType vDCref = organisation.getVdcRefByName(vDCname);
+		Vdc vdc = Vdc.getVdcByReference(vcloudClient, vDCref);
+
+		ReferenceResult edgeGWref = vdc.getEdgeGatewayRefs();
+		ReferencesType a = edgeGWref.getResource();
+		List<JAXBElement<ReferenceType>> g = a.getReference();
+		Iterator<JAXBElement<ReferenceType>> EdgeGWit = g.iterator();
+		
+		while (EdgeGWit.hasNext())
+		list.add(EdgeGWit.next().getValue().getName());
+	
+		String[] EDGWs = new String[list.size()];
+		EDGWs = (String[]) list.toArray(EDGWs);
+
+		return (EDGWs);
+
+}
+	public static String[] get_vDCORGpervDC(Object[] argsvCconfig)  throws Exception,IOException, VCloudException{
+		// TODO Auto-generated method stub
+		vcloud_config config =new vcloud_config(argsvCconfig[0].toString(), argsvCconfig[1].toString(), argsvCconfig[2].toString(), argsvCconfig[3].toString(), argsvCconfig[4].toString());
+		String vDCname=argsvCconfig[5].toString();
+
+		VcloudClient vcloudClient = authenticate( config );	
+		//for  (Entry<String, ReferenceType> e : example.entrySet()) 
+		//{
+		//	System.out.println(e.getKey()+"="+e.getValue());
+		//}
+
+		List<String> list = new ArrayList<String>();
+
+		HashMap<String, ReferenceType> OrgRefs = vcloudClient.getOrgRefsByName();
+		Organization organisation = Organization.getOrganizationByReference(vcloudClient, OrgRefs.get(config.getOrganization()));
+
+
+		Collection<ReferenceType> vDCRef = organisation.getVdcRefs();
+		ReferenceType vDCref = organisation.getVdcRefByName(vDCname);
+		Vdc vdc = Vdc.getVdcByReference(vcloudClient, vDCref);
+		
+		Collection<ReferenceType> NetRef = vdc.getAvailableNetworkRefs();
+
+		Iterator<ReferenceType> NetRefit = NetRef.iterator();
 		
 		
+		while (NetRefit.hasNext())
+		{
+		String name=NetRefit.next().getName();
+		list.add(name);
+		//System.out.println(name);
+		}
+		String[] vDCorg = new String[list.size()];
+		vDCorg = (String[]) list.toArray(vDCorg);
+
+		return (vDCorg);
+	}
+	public static String[] get_vAppspervDC(Object[] argsvCconfig) throws Exception,IOException, VCloudException{
+		// TODO Auto-generated method stub
+		vcloud_config config =new vcloud_config(argsvCconfig[0].toString(), argsvCconfig[1].toString(), argsvCconfig[2].toString(), argsvCconfig[3].toString(), argsvCconfig[4].toString());
+		String vDCname=argsvCconfig[5].toString();
+
+		VcloudClient vcloudClient = authenticate( config );	
+		//for  (Entry<String, ReferenceType> e : example.entrySet()) 
+		//{
+		//	System.out.println(e.getKey()+"="+e.getValue());
+		//}
+
+		List<String> list = new ArrayList<String>();
+
+		HashMap<String, ReferenceType> OrgRefs = vcloudClient.getOrgRefsByName();
+		Organization organisation = Organization.getOrganizationByReference(vcloudClient, OrgRefs.get(config.getOrganization()));
+
+
+		Collection<ReferenceType> vDCRef = organisation.getVdcRefs();
+		ReferenceType vDCref = organisation.getVdcRefByName(vDCname);
+		Vdc vdc = Vdc.getVdcByReference(vcloudClient, vDCref);
 		
-		//Organization organisation = Organization.getOrganizationByReference(vcloudClient, vcloudClient.getOrgRefsByName()[orgName]);
+		Collection<ReferenceType> vAppRef = vdc.getVappRefs();
+
+		Iterator<ReferenceType> vAppRefit = vAppRef.iterator();
+		
+		
+		while (vAppRefit.hasNext())
+		{
+		String name=vAppRefit.next().getName();
+		list.add(name);
+		System.out.println(name);
+		}
+		String[] vApps = new String[list.size()];
+		vApps = (String[]) list.toArray(vApps);
+ 
+		return (vApps);	}
+	
+	
+	public static void create_server(Object[] args) {
+		// TODO Auto-generated method stub
+		vcloud_config config =new vcloud_config(args[0].toString(), args[1].toString(), args[2].toString(), args[3].toString(), args[4].toString());		
+		vcloud_param  vcloud= new vcloud_param(args[5].toString(),args[6].toString(),args[7].toString(),args[8].toString(),args[9].toString(),args[10].toString(),args[11].toString(),args[12].toString(),args[13].toString(),
+				args[14].toString(),args[15].toString(),args[16].toString(),args[16].toString(),args[17].toString(),args[18].toString(),args[19].toString(),args[20].toString(),args[21].toString(),args[22].toString(),args[23].toString());
 		
 		
 	}
+
 }
+
