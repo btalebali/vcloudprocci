@@ -21,6 +21,9 @@ package vcclient;
 import org.apache.log4j.Logger;
 import org.apache.log4j.LogManager;
 
+import sun.net.InetAddressCachePolicy;
+import sun.security.x509.IPAddressName;
+
 import com.vmware.vcloud.api.rest.schema.ReferenceType;
 
 import java.util.logging.Level;
@@ -29,8 +32,13 @@ import javax.annotation.Generated;
 import javax.xml.namespace.QName;
 
 import java.math.BigInteger;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 import com.vmware.vcloud.sdk.admin.EdgeGateway;
+import com.vmware.vcloud.sdk.admin.ExternalNetwork;
+import com.vmware.vcloud.sdk.admin.extensions.VMWExternalNetwork;
 import com.vmware.vcloud.sdk.constants.*;
 
 import java.io.FileNotFoundException;
@@ -51,16 +59,35 @@ import java.util.concurrent.TimeoutException;
 
 import javax.xml.bind.JAXBElement;
 
+import com.vmware.vcloud.api.rest.schema.DhcpServiceType;
 import com.vmware.vcloud.api.rest.schema.FirewallRuleProtocols;
 import com.vmware.vcloud.api.rest.schema.FirewallRuleType;
 import com.vmware.vcloud.api.rest.schema.FirewallServiceType;
+import com.vmware.vcloud.api.rest.schema.GatewayConfigurationType;
+import com.vmware.vcloud.api.rest.schema.GatewayFeaturesType;
+import com.vmware.vcloud.api.rest.schema.GatewayInterfaceType;
+import com.vmware.vcloud.api.rest.schema.GatewayInterfacesType;
+import com.vmware.vcloud.api.rest.schema.GatewayNatRuleType;
+import com.vmware.vcloud.api.rest.schema.GatewayType;
 import com.vmware.vcloud.api.rest.schema.GuestCustomizationSectionType;
 import com.vmware.vcloud.api.rest.schema.InstantiateVAppTemplateParamsType;
 import com.vmware.vcloud.api.rest.schema.InstantiationParamsType;
+import com.vmware.vcloud.api.rest.schema.IpAddressesType;
 import com.vmware.vcloud.api.rest.schema.IpRangeType;
 import com.vmware.vcloud.api.rest.schema.IpRangesType;
 import com.vmware.vcloud.api.rest.schema.IpScopeType;
 import com.vmware.vcloud.api.rest.schema.IpScopesType;
+import com.vmware.vcloud.api.rest.schema.IpsecVpnServiceType;
+import com.vmware.vcloud.api.rest.schema.IpsecVpnTunnelType;
+import com.vmware.vcloud.api.rest.schema.LBPersistenceType;
+import com.vmware.vcloud.api.rest.schema.LBPoolHealthCheckType;
+import com.vmware.vcloud.api.rest.schema.LBPoolMemberType;
+import com.vmware.vcloud.api.rest.schema.LBPoolServicePortType;
+import com.vmware.vcloud.api.rest.schema.LBVirtualServerServiceProfileType;
+import com.vmware.vcloud.api.rest.schema.LoadBalancerPoolType;
+import com.vmware.vcloud.api.rest.schema.LoadBalancerServiceType;
+import com.vmware.vcloud.api.rest.schema.LoadBalancerVirtualServerType;
+import com.vmware.vcloud.api.rest.schema.NatRuleType;
 import com.vmware.vcloud.api.rest.schema.NatServiceType;
 import com.vmware.vcloud.api.rest.schema.NetworkConfigSectionType;
 import com.vmware.vcloud.api.rest.schema.NetworkConfigurationType;
@@ -68,12 +95,15 @@ import com.vmware.vcloud.api.rest.schema.NetworkConnectionSectionType;
 import com.vmware.vcloud.api.rest.schema.NetworkConnectionType;
 import com.vmware.vcloud.api.rest.schema.NetworkFeaturesType;
 import com.vmware.vcloud.api.rest.schema.NetworkServiceType;
+import com.vmware.vcloud.api.rest.schema.NetworksType;
 import com.vmware.vcloud.api.rest.schema.ObjectFactory;
+import com.vmware.vcloud.api.rest.schema.OrgVdcNetworkType;
 import com.vmware.vcloud.api.rest.schema.RecomposeVAppParamsType;
 import com.vmware.vcloud.api.rest.schema.ReferencesType;
 import com.vmware.vcloud.api.rest.schema.SourcedCompositionItemParamType;
 import com.vmware.vcloud.api.rest.schema.StaticRouteType;
 import com.vmware.vcloud.api.rest.schema.StaticRoutingServiceType;
+import com.vmware.vcloud.api.rest.schema.SubnetParticipationType;
 import com.vmware.vcloud.api.rest.schema.VAppNetworkConfigurationType;
 import com.vmware.vcloud.api.rest.schema.VmType;
 import com.vmware.vcloud.api.rest.schema.ovf.CimString;
@@ -82,6 +112,7 @@ import com.vmware.vcloud.api.rest.schema.ovf.NetworkSectionNetwork;
 import com.vmware.vcloud.api.rest.schema.ovf.RASDType;
 import com.vmware.vcloud.api.rest.schema.ovf.SectionType;
 import com.vmware.vcloud.sdk.CatalogItem;
+import com.vmware.vcloud.sdk.OrgVdcNetwork;
 import com.vmware.vcloud.sdk.Organization;
 import com.vmware.vcloud.sdk.ReferenceResult;
 import com.vmware.vcloud.sdk.Task;
@@ -95,9 +126,11 @@ import com.vmware.vcloud.sdk.constants.FenceModeValuesType;
 import com.vmware.vcloud.sdk.constants.IpAddressAllocationModeType;
 import com.vmware.vcloud.sdk.constants.UndeployPowerActionType;
 import com.vmware.vcloud.sdk.constants.Version;
+import com.vmware.vcloud.sdk.exception.MissingPropertyException;
 import com.vmware.vcloud.sdk.VirtualCpu;
 import com.vmware.vcloud.sdk.VirtualDisk;
 import com.vmware.vcloud.sdk.VirtualMemory;
+import com.google.common.net.InetAddresses;
 
 public class ManageIaaS {
 	public static final long BOOT_DELAY = 80000; //  5 min
@@ -105,7 +138,9 @@ public class ManageIaaS {
 	public static final int  PASSWORD_LENGTH = 10; 
 	private static final 	 ReferenceType NullPointerException = null;
 	public static    		 VcloudClient vcloudClient;
+	private static InetAddresses InetAddresses;
 	static final     		 Logger logger = LogManager.getLogger(ManageIaaS.class.getName());
+	private static final ObjectFactory OBJECT_FACTORY = null;
 	
 	public ManageIaaS() { }      						// default constructor
 	public static Object start_server(Object[] args) throws Exception,IOException, VCloudException
@@ -310,7 +345,7 @@ public class ManageIaaS {
 			Vdc vdc =  ManageIaaS.findVdc(vcloudClient, param.getOrganization(), param.getvDC());
 
 			// finding the vAppTemplate Reference using the vAppTemplate
-			ReferenceType vAppTemplatereference =findvAppTemplate(vdc,param.getvApptemplate());
+			ReferenceType vAppTemplatereference =findvAppTemplate(vcloudClient,vdc.getReference(),param.getvApptemplate());
 
 			if (vAppTemplatereference  == NullPointerException) 
 			{
@@ -869,7 +904,7 @@ public class ManageIaaS {
 				.get(0).getNetworkName();
 
 		Vdc vdc =  findVdc(vcloudClient, param.getOrganization(),param.getvDC() );
-		ReferenceType vAppTemplatereference =findvAppTemplate(vdc,param.getvApptemplate());
+		ReferenceType vAppTemplatereference =findvAppTemplate(vcloudClient, vdc.getReference(),param.getvApptemplate());
 
 		SourcedCompositionItemParamType vmItem = new SourcedCompositionItemParamType();
 		vmItem.setSource(vAppTemplatereference);
@@ -921,7 +956,7 @@ public class ManageIaaS {
 				.get(0).getNetworkName();
 
 		Vdc vdc =  findVdc(vcloudClient, param.getOrganization(),param.getvDC() );
-		ReferenceType vAppTemplatereference =findvAppTemplate(vdc,param.getvApptemplate());
+		ReferenceType vAppTemplatereference =findvAppTemplate(vcloudClient,vdc.getReference(),param.getvApptemplate());
 
 		SourcedCompositionItemParamType vmItem = new SourcedCompositionItemParamType();
 		vmItem.setSource(vAppTemplatereference);
@@ -1397,22 +1432,11 @@ public class ManageIaaS {
 			firewallRuleType.setDestinationPortRange(portRange);
 		}
 		firewallRuleType.setProtocols(protocols);
-		//firewallRuleType.setSourcePortRange("ANY");
-		//firewallRuleType.setDirection("incoming");
-
-
-		//System.out.println("firewallRuleType.getDirection()"+firewallRuleType.getDirection());
-		//System.out.println("firewallRuleType.getPort()="+firewallRuleType.getPort());     
-		//System.out.println("firewallRuleType.getSourcePortRange()="+firewallRuleType.getSourcePortRange());
-		//System.out.println("firewallRuleType.getDestinationPortRange()="+firewallRuleType.getDestinationPortRange());
-
-		//System.out.println("firewallRuleType.getDestinationIp()="+firewallRuleType.getDestinationIp());
-		//System.out.println("ffirewallRuleType.getSourceIp()="+firewallRuleType.getSourceIp());
-
-
 		fwRules.add(firewallRuleType);
 	}
 
+	
+	
 	private static void updateNetworkRules(Vapp vapp, vcloud_params param, vApp_Network network) throws VCloudException 
 	{
 		// TODO Auto-generated Method Stub
@@ -1482,25 +1506,25 @@ public class ManageIaaS {
 
 		NetworkConfigurationType networkConfigurationType = new NetworkConfigurationType();
 
-		if (vdc.getAvailableNetworkRefs().size() == 0) {
+		//if (vdc.getAvailableNetworkRefs().size() == 0) {
 			//System.out.println("No Networks in vdc to instantiate the vapp");
-			System.exit(0);
-		}
+		//	System.exit(0);
+		//}
 
-		networkConfigurationType.setParentNetwork(vdc.getAvailableNetworkRefs()
-				.iterator().next());
-		networkConfigurationType.setFenceMode(FenceModeValuesType.BRIDGED
-				.value());
-		VAppNetworkConfigurationType vAppNetworkConfigurationType = new VAppNetworkConfigurationType();
-		vAppNetworkConfigurationType.setConfiguration(networkConfigurationType);
-		vAppNetworkConfigurationType.setNetworkName(vdc
-				.getAvailableNetworkRefs().iterator().next().getName());
+		//networkConfigurationType.setParentNetwork(vdc.getAvailableNetworkRefs()
+		//		.iterator().next());
+		//networkConfigurationType.setFenceMode(FenceModeValuesType.BRIDGED
+		//		.value());
+		//VAppNetworkConfigurationType vAppNetworkConfigurationType = new VAppNetworkConfigurationType();
+		//vAppNetworkConfigurationType.setConfiguration(networkConfigurationType);
+		//vAppNetworkConfigurationType.setNetworkName(vdc
+		//		.getAvailableNetworkRefs().iterator().next().getName());
 		NetworkConfigSectionType networkConfigSectionType = new NetworkConfigSectionType();
 		MsgType networkInfo = new MsgType();
 		networkConfigSectionType.setInfo(networkInfo);
 		List<VAppNetworkConfigurationType> vAppNetworkConfigs = networkConfigSectionType
 				.getNetworkConfig();
-		vAppNetworkConfigs.add(vAppNetworkConfigurationType);
+		//vAppNetworkConfigs.add(vAppNetworkConfigurationType);
 		//
 		// fill in remaining InstantititonParams (name, Source)
 		//
@@ -1527,10 +1551,10 @@ public class ManageIaaS {
 	/*       f i n d _ v A p p _ T e m p l a t e                */
 	/*  -----------------------------------------------------------------   */
 
-	public static ReferenceType findvAppTemplate(Vdc vdc,
-			String vappTemplate)
-					throws VCloudException, FileNotFoundException, InterruptedException
+	public static ReferenceType findvAppTemplate(VcloudClient vcloudClient, ReferenceType vDCRef,
+			String vappTemplate)throws VCloudException, FileNotFoundException, InterruptedException
 					{ 
+		Vdc vdc= Vdc.getVdcByReference(vcloudClient, vDCRef);
 		ReferenceType k=null;
 		Collection<ReferenceType> t = vdc.getVappTemplateRefsByName(vappTemplate);
 		while (t.iterator().hasNext())
@@ -1539,10 +1563,8 @@ public class ManageIaaS {
 			if (k.getName().equals(vappTemplate))
 			{
 				return k;
-			}
-		}
-		return k;
-					}
+			}}
+		return k;}
 
 
 
@@ -1595,12 +1617,14 @@ public class ManageIaaS {
 		tab[1]=new BigInteger("512");
 		tab[2]=new BigInteger("1024");
 		tab[3]=new BigInteger("2048");
+		
 		BigInteger[] disksize =new BigInteger[5];
 		disksize[0]=new BigInteger("8192");//8 ghz
 		disksize[1]=new BigInteger("16384");//16 ghz
 		disksize[2]=new BigInteger("32768");//32 ghz
 		disksize[3]=new BigInteger("65536");//16 ghz
 		disksize[4]=new BigInteger("131072");//16 ghz
+		
 		VirtualCpu vcpu=vm.getCpu();
 		vcpu.setNoOfCpus(tabc[a-1]);
 		try {
@@ -1615,6 +1639,8 @@ public class ManageIaaS {
 			//System.out.println("    Adding vcpu failed, verify your quota !!!");
 			System.exit(0);
 		}
+		
+		
 		VirtualMemory vRAM=vm.getMemory();
 		vRAM.setMemorySize(tab[bb]);
 		try {
@@ -1800,6 +1826,42 @@ public class ManageIaaS {
 		return (EDGWs);
 
 }
+	
+	public static ReferenceType find_EDGE(vcloud_config config,vcloud_param param) throws Exception,IOException, VCloudException 
+	{
+
+		VcloudClient vcloudClient = authenticate( config );	
+		List<String> list = new ArrayList<String>();
+
+		HashMap<String, ReferenceType> OrgRefs = vcloudClient.getOrgRefsByName();
+		Organization organisation = Organization.getOrganizationByReference(vcloudClient, OrgRefs.get(config.getOrganization()));
+
+
+		Collection<ReferenceType> vDCRef = organisation.getVdcRefs();
+		ReferenceType vDCref = organisation.getVdcRefByName(param.getvDC());
+		Vdc vdc = Vdc.getVdcByReference(vcloudClient, vDCref);
+
+		ReferenceResult edgeGWref = vdc.getEdgeGatewayRefs();
+		ReferencesType a = edgeGWref.getResource();
+		List<JAXBElement<ReferenceType>> g = a.getReference();
+		Iterator<JAXBElement<ReferenceType>> EdgeGWit = g.iterator();
+		ReferenceType Ref=null;
+		while (EdgeGWit.hasNext())
+		{
+			Ref = EdgeGWit.next().getValue();
+		list.add(Ref.getName());
+		if(Ref.getName().compareTo(param.getEdgeGateway())==0)
+			return Ref;	
+		}
+		return Ref;
+		
+
+}
+	
+	
+	
+	
+	
 	public static String[] get_vDCORGpervDC(Object[] argsvCconfig)  throws Exception,IOException, VCloudException{
 		// TODO Auto-generated method stub
 		vcloud_config config =new vcloud_config(argsvCconfig[0].toString(), argsvCconfig[1].toString(), argsvCconfig[2].toString(), argsvCconfig[3].toString(), argsvCconfig[4].toString());
@@ -1875,14 +1937,604 @@ public class ManageIaaS {
 		return (vApps);	}
 	
 	
-	public static void create_server(Object[] args) {
-		// TODO Auto-generated method stub
+	
+	
+	public static Object create_server(Object[] args) throws Exception, IOException, VCloudException {
+		// TODO Auto-generated method stub			
 		vcloud_config config =new vcloud_config(args[0].toString(), args[1].toString(), args[2].toString(), args[3].toString(), args[4].toString());		
 		vcloud_param  vcloud= new vcloud_param(args[5].toString(),args[6].toString(),args[7].toString(),args[8].toString(),args[9].toString(),args[10].toString(),args[11].toString(),args[12].toString(),args[13].toString(),
-				args[14].toString(),args[15].toString(),args[16].toString(),args[16].toString(),args[17].toString(),args[18].toString(),args[19].toString(),args[20].toString(),args[21].toString(),args[22].toString(),args[23].toString());
+		args[14].toString(),args[15].toString(),args[16].toString(),args[17].toString(),args[18].toString(),args[19].toString(),args[20].toString(),args[21].toString(),args[22].toString(),args[23].toString(),args[24].toString(),args[25].toString());
+		System.out.println(vcloud.getAccess());
+		
+		// verify if vApp with the same name exists in the specific vDC
+		
+					VcloudClient vcloudClient = authenticate( config );
+					//get org
+					HashMap<String, ReferenceType> OrgRefs = vcloudClient.getOrgRefsByName();
+					Organization organisation = Organization.getOrganizationByReference(vcloudClient, OrgRefs.get(config.getOrganization()));
+					//Collection<ReferenceType> vDCRef = organisation.getVdcRefs();
+					ReferenceType vDCref = organisation.getVdcRefByName(vcloud.getvDC());
+					Vdc vdc = Vdc.getVdcByReference(vcloudClient, vDCref);
+				
+					if(vdc.getVappRefByName(vcloud.getvAppName()) != null)
+					{
+						vcloud.setMessage("vApp with the same name exists, please change vApp name");
+						System.out.println(vcloud.toString());
+						return (vcloud.toString());
+						
+					}
+		// Find vApp template
+					// Finding the vAppTemplate Reference using the vAppTemplate in all vDCs
+					Collection<ReferenceType> vDCRefs = organisation.getVdcRefs();
+					Iterator<ReferenceType> vDCRefsit = vDCRefs.iterator();
+					ReferenceType vAppTemplateRef=NullPointerException;
+					while(vDCRefsit.hasNext())
+					{
+					vAppTemplateRef =findvAppTemplate(vcloudClient,vDCRefsit.next(),vcloud.getvApptemplate());
+					if(vAppTemplateRef!=NullPointerException)
+						break;
+					}
+					
+					if(vAppTemplateRef==NullPointerException)
+					{
+						vcloud.setMessage("vApptemplate not found !");
+						System.out.println(vcloud.toString());
+						return (vcloud.toString());
+					}	
+
+					
+			 //verify if vDCorg exists if yes retrieve it
+			 		
+			 //create a routed vDCORG if not exists
+					vApp_Network Net = new vApp_Network(vcloud.getNetlabel());  // setting Network
+					//verify if EDGE gateway exists and that has interface capacity available
+					ReferenceType EDGERef = find_EDGE(config, vcloud);
+					EdgeGateway edgegw=EdgeGateway.getEdgeGatewayByReference(vcloudClient, EDGERef);	
+					
+					
+					//orgvdcNettype
+					create_or_get_vDCORGNET(vdc,Net,EDGERef);
+
+			        
+		// Instantiate vApp from vApptemple and connect to vDC network
+					vdc =  ManageIaaS.findVdc(vcloudClient, config.getOrganization(), vcloud.getvDC());
+					
+					//instantiate  vApp
+
+					Vapp vapp= newvAppFromTemplatewithNetconfig(vAppTemplateRef,vdc, vcloud,Net);
+			
+       					
+					//Hardware customization of the VM 
+					GuestCustomizationVM(vcloudClient,vcloud,vapp.getReference());		
+					
+					//connect VMs to vDC network
+					configureVMsIPAddressingMode_staticmode(vcloudClient,vapp.getReference(), vdc,Net);
+					
+					
+		//setting up Network configuration
+					
+					vcloudClient = authenticate( config);
+					vapp=Vapp.getVappByReference(vcloudClient, vapp.getReference());
+					List<VM> childVms = vapp.getChildrenVms();
+						NetworkConnectionType nic0= childVms.get(0).getNetworkConnections().iterator().next();
+						if (nic0.getIpAddress() != null)
+						{
+						vcloud.setPrivateaddress(nic0.getIpAddress());		
+					   }
+					//setting up public IP if needed
+						if(vcloud.getAccess().compareTo("public")==0)
+						{
+						//Pool d'IP publique sous-alloué dans la EDGE GW
+							
+						String[] AvailablePublicIP=getPublicIP(edgegw);
+	                    vcloud.setPublicaddress(AvailablePublicIP[ 0 + (int)(Math.random()*AvailablePublicIP.length)]);						
+						}
+						
+	                  //////////////////
+	                  //configure NAT
+						DeactivateDHCP(edgegw, vdc, vcloud, Net, vcloudClient);
+						configureNAT(edgegw, vdc, vcloud, Net, vcloudClient);					
+					  //Configure Firewall
+						configureFirewall(edgegw,vcloud); 
+				
+				
+		//Starting VM				
+					//vapp.powerOn().waitForTask(100000000,10000);
+	
+		vcloud.setMessage("deployment succeeded");
+		return (vcloud.toString());				
+		
+	}
+
+
+		private static void create_or_get_vDCORGNET(Vdc vdc, vApp_Network net, ReferenceType eDGERef) throws VCloudException, MissingPropertyException, TimeoutException {
+		// TODO Auto-generated method stub
+			
+			@SuppressWarnings("deprecation")
+			ReferenceType networkref = vdc.getAvailableNetworkRefByName(net.getvAppNetName1());
+			if(networkref==NullPointerException)
+			{
+			OrgVdcNetworkType OrgvdcNettype=new OrgVdcNetworkType();
+			OrgvdcNettype.setName(net.getvAppNetName1());
+			OrgvdcNettype.setDescription("Net vDC network for UICB");			
+			NetworkConfigurationType NetConfigType=new NetworkConfigurationType();				
+			NetConfigType.setRetainNetInfoAcrossDeployments(true);
+			NetConfigType.setBackwardCompatibilityMode(true);		
+			NetConfigType.setRetainNetInfoAcrossDeployments(true);
+			NetConfigType.setBackwardCompatibilityMode(true);
+			IpScopeType ipScope = new IpScopeType();
+			ipScope.setGateway(net.getgateway1());
+			ipScope.setNetmask(net.getNetmask1());
+			ipScope.setDns1(net.getDNS());
+			ipScope.setIsEnabled(true);
+			ipScope.setIsInherited(false);
+			IpRangesType ipRangesType = new IpRangesType();
+			IpRangeType  ipRangeType  = new IpRangeType();
+			ipRangeType.setStartAddress(net.getStartaddress());     
+			ipRangeType.setEndAddress  (net.getEndaddress(IP_STATIC_RAGE));
+			ipRangesType.getIpRange().add(ipRangeType);  
+			ipScope.setIpRanges(ipRangesType);
+			ipScope.setIsEnabled(true);
+			ipScope.setIsInherited(false); 
+			IpScopesType ipScopes = new IpScopesType();
+			ipScopes.getIpScope().add(ipScope);
+			NetConfigType.setIpScopes(ipScopes);   
+			NetConfigType.setFenceMode(FenceModeValuesType.NATROUTED.value());			
+			OrgvdcNettype.setConfiguration(NetConfigType);
+			OrgvdcNettype.setEdgeGateway(eDGERef);
+	        OrgVdcNetwork orgvdcNet= vdc.createOrgVdcNetwork(OrgvdcNettype);	        
+			List<Task> tasks = orgvdcNet.getTasks();
+			if (tasks.size() > 0) 
+			{
+				tasks.get(0).waitForTask(100000000,10000);
+			}
+			}
+			
+		
+	}
+		private static void GuestCustomizationVM(VcloudClient vcloudClient2,vcloud_param vcloud, ReferenceType vappRef) throws VCloudException, TimeoutException  {
+		// TODO Auto-generated method stub
+			if(vcloud.getRootpass().equals(""))
+               vcloud.setRootpass(generate(PASSWORD_LENGTH));			
+			String script="#/bin/sh \n"
+					+ "wget http://109.234.64.71/accords-repository/Linux/install-cosacs-v1.sh \n"
+					+ "sh install-cosacs-v1.sh \n"
+					+ "exit 0";
+			
+			Vapp vapp = Vapp.getVappByReference(vcloudClient2, vappRef);
+			VM vm1=VM.getVMByReference(vcloudClient2, vapp.getChildrenVms().get(0).getReference());
+			
+			GuestCustomizationSectionType guestCustomizationSection =
+					vm1.getGuestCustomizationSection();
+			guestCustomizationSection.setEnabled(true);
+			guestCustomizationSection.setAdminPasswordEnabled(true);
+			guestCustomizationSection.setAdminPasswordAuto(false);
+			guestCustomizationSection.setAdminPassword(vcloud.getRootpass());
+			guestCustomizationSection.setComputerName(vcloud.getHostname());
+			guestCustomizationSection.setAdminAutoLogonEnabled(true);
+			guestCustomizationSection.setCustomizationScript(script);
+			vm1.updateSection(guestCustomizationSection).waitForTask(1000000, 1000);
+	
+	//		updatevmflavors(Fl1.getvCPU(), Fl1.getRAM(), Fl1.getDisk(), vm1);	
+			
+			//Update VCPU 
+			VirtualCpu vcpu=vm1.getCpu();
+			vcpu.setNoOfCpus(Integer.parseInt(vcloud.getCpu()));			
+			try {
+				try {
+					vm1.updateCpu(vcpu).waitForTask(1000000, 1000);
+					} catch (TimeoutException e) {
+					    e.printStackTrace();
+					    vcloud.setMessage("Setting up CPU timed out, please verify quota!");
+				        }
+						}catch (VCloudException e) {
+						    e.printStackTrace();
+						    vcloud.setMessage("Setting up CPU failed, please verify quota!");
+			    }
+			//Update RAM
+			VirtualMemory vRAM=vm1.getMemory();
+			BigInteger MemorySize = new BigInteger(vcloud.getRam());
+			vRAM.setMemorySize(MemorySize);
+			try {try {
+					vm1.updateMemory(vRAM).waitForTask(1000000, 1000);
+				     } catch (TimeoutException e) {
+					e.printStackTrace();
+					vcloud.setMessage("Setting up RAM timed out, please verify quota!");
+				}
+			}catch (VCloudException e) {
+			    e.printStackTrace();
+			    vcloud.setMessage("Setting up RAM failed, please verify quota!");
+			}			
+			
+	       //Update Disc
+			BigInteger disksize;		
+			if  (Integer.parseInt(vcloud.getDisc()) <= 8) 
+				disksize=new BigInteger("8192");
+			else if (Integer.parseInt(vcloud.getDisc()) <=16)
+				disksize=new BigInteger("16384");
+			else if (Integer.parseInt(vcloud.getDisc()) <=32)
+				disksize=new BigInteger("32768");
+			else if (Integer.parseInt(vcloud.getDisc())<=64)
+				disksize=new BigInteger("65536");
+			else 
+				disksize=new BigInteger("131072");			
+			
+			List<VirtualDisk> disks = vm1.getDisks();
+			List<VirtualDisk> newDisks = new ArrayList<VirtualDisk>(disks.size());
+			String diskname=disks.get(1).getItemResource().getElementName().getValue();
+
+			try {
+				for (VirtualDisk disk : disks) {
+					if (disk.isHardDisk()) {
+						RASDType d = new RASDType();
+						d.setElementName(disk.getItemResource().getElementName());
+						d.setResourceType(disk.getItemResource().getResourceType());
+						d.setInstanceID(disk.getItemResource().getInstanceID());
+
+						for (int i = 0; i < disk.getItemResource().getHostResource().size(); i++) {
+							CimString resource = disk.getItemResource().getHostResource().get(i);
+							d.getHostResource().add(resource);
+							if (disk.getItemResource().getElementName().getValue().equals(diskname)) {
+								if (disk.getHardDiskSize().compareTo(disksize) == 1) {
+									throw new VCloudException("Failed to resize disk, shrinking disks is not supported");
+								}
+								for (QName key : resource.getOtherAttributes().keySet()) {
+									if (key.getLocalPart().equals("capacity")) {
+										resource.getOtherAttributes().put(key, disksize.toString());
+									}
+								}
+							}
+						}
+						newDisks.add(new VirtualDisk(d));
+					}
+				}
+
+
+			} catch (VCloudException e) {
+				vcloud.setMessage("An error occured while resizing disks");
+				e.printStackTrace();
+			}
+			
+			try {try {
+					vm1.updateDisks(newDisks).waitForTask(1000000, 1000);
+				} catch (TimeoutException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					vcloud.setMessage("Resizing disks timed out");}
+			} 
+			catch (VCloudException e) {
+				e.printStackTrace();
+				vcloud.setMessage("Resizing disks failed, please verify quota!!!");
+				}
+		
+		
+		
+		}
+		
+
+		private static String[] getPublicIP(EdgeGateway edgegw) throws UnknownHostException {
+		// TODO Auto-generated method stub	
+			LinkedList<String> PublicAddress = new LinkedList<>();
+			
+			for( GatewayInterfaceType  gatewayInterfacetype : edgegw.getResource().getConfiguration().getGatewayInterfaces().getGatewayInterface())
+			{
+				if(gatewayInterfacetype.getInterfaceType().compareTo("uplink")==0)
+				{	
+						for(SubnetParticipationType subnetparticipation:gatewayInterfacetype.getSubnetParticipation())						
+						{
+							
+							if(subnetparticipation.getIpRanges() == null)
+								System.out.println("no sub-allocated public IP for this interface");
+							else
+							{
+							for(IpRangeType subnetpartyperange:subnetparticipation.getIpRanges().getIpRange())
+							{
+								InetAddress startaddress = InetAddress.getByName(subnetpartyperange.getStartAddress());
+								InetAddress endaddress = InetAddress.getByName(subnetpartyperange.getEndAddress());
+								InetAddress cpt = InetAddress.getByName(subnetpartyperange.getStartAddress());
+								PublicAddress.add(cpt.toString());				            
+								System.out.println(cpt.getHostAddress());
+								
+					         while(!cpt.equals(endaddress))
+					         {
+					        	 cpt=InetAddresses.increment(cpt);
+					        	 PublicAddress.add(cpt.getHostAddress());
+					        	 System.out.println(cpt.getHostAddress());
+					         }
+							}
+						}	
+						}
+				}
+			}
+			
+			String[] PubAddresstab = new String[PublicAddress.size()];
+			PubAddresstab = (String[]) PublicAddress.toArray(PubAddresstab);				
+		return PubAddresstab;
+	}
+		
+		
+		private static Vapp newvAppFromTemplatewithNetconfig(ReferenceType vAppTemplateReference,
+				Vdc vdc, vcloud_param vcloud, vApp_Network net) throws VCloudException, TimeoutException {
+
+			NetworkConfigurationType networkConfigurationType = new NetworkConfigurationType();	
+			networkConfigurationType.setParentNetwork(vdc.getAvailableNetworkRefByName(net.getvAppNetName1()));
+			networkConfigurationType.setFenceMode(FenceModeValuesType.BRIDGED.value());
+			VAppNetworkConfigurationType vAppNetworkConfigurationType = new VAppNetworkConfigurationType();
+		    vAppNetworkConfigurationType.setConfiguration(networkConfigurationType);
+			vAppNetworkConfigurationType.setNetworkName(vdc.getAvailableNetworkRefByName(net.getvAppNetName1()).getName());
+			NetworkConfigSectionType networkConfigSectionType = new NetworkConfigSectionType();
+			MsgType networkInfo = new MsgType();
+			networkConfigSectionType.setInfo(networkInfo);
+			List<VAppNetworkConfigurationType> vAppNetworkConfigs = networkConfigSectionType.getNetworkConfig();
+			
+			
+			
+			vAppNetworkConfigs.add(vAppNetworkConfigurationType);
+			//
+			// fill in remaining InstantiationParams (name, Source)
+			//
+			InstantiationParamsType instantiationParamsType = new InstantiationParamsType();
+			List<JAXBElement<? extends SectionType>> sections = instantiationParamsType
+					.getSection();
+			sections.add(new ObjectFactory().createNetworkConfigSection(networkConfigSectionType));
+			//
+			// create the request body (InstantiateVAppTemplateParams)
+			//
+			InstantiateVAppTemplateParamsType instVappTemplParamsType = new InstantiateVAppTemplateParamsType();
+			instVappTemplParamsType.setName(vcloud.getvAppName());
+			instVappTemplParamsType.setSource(vAppTemplateReference);
+			instVappTemplParamsType.setInstantiationParams(instantiationParamsType);
+			//
+			// make the request, and get an href to the vApp in return
+			//
+			Vapp vapp = vdc.instantiateVappTemplate(instVappTemplParamsType);
+            //block task
+					List<Task> tasksvapp = vapp.getTasks();
+					if (tasksvapp.size() > 0) 
+					{
+						tasksvapp.get(0).waitForTask(100000000,10000);
+					}
+			return vapp;
+		
+		
 		
 		
 	}
+		public static String[] get_vDCORGNetworks(Object[] args) throws KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, VCloudException 
+		{
+			// TODO Auto-generated method stub
+			vcloud_config config =new vcloud_config(args[0].toString(), args[1].toString(), args[2].toString(), args[3].toString(), args[4].toString());
+			String vDCname=args[5].toString();	
+			VcloudClient vcloudClient = authenticate( config );	
+			HashMap<String, ReferenceType> OrgRefs = vcloudClient.getOrgRefsByName();
+			Organization organisation = Organization.getOrganizationByReference(vcloudClient, OrgRefs.get(config.getOrganization()));
+			Collection<ReferenceType> vDCRef = organisation.getVdcRefs();
+			ReferenceType vDCref = organisation.getVdcRefByName(vDCname);
+			Vdc vdc = Vdc.getVdcByReference(vcloudClient, vDCref);
+			Collection<ReferenceType> exnetworks =vdc.getAvailableNetworkRefs();
+			String[] aux = new String[exnetworks.size()];
+			Iterator<ReferenceType> ExNetworksit = exnetworks.iterator();
+			
+			for (int i=0;i<exnetworks.size();i++) 
+			{
+				String name=ExNetworksit.next().getName();
+				aux[i]=name;
+
+			}			
+			return aux;	
+		}
+
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		private static void DeactivateDHCP(EdgeGateway edgegw,Vdc vdc, vcloud_param vcloud,vApp_Network net,VcloudClient vcloudClient
+				) throws VCloudException, TimeoutException {	
+			//Retrieve previous configuration
+			GatewayFeaturesType gatewayFeatures = edgegw.getResource().getConfiguration().getEdgeGatewayServiceConfiguration();
+			//GatewayFeaturesType gatewayFeatures = new GatewayFeaturesType();
+			//ObjectFactory objectFactory = new ObjectFactory();
+            //Configure DHCP (deactivateDHCP)
+			//// retreive dhcpservice Type
+			JAXBElement<? extends NetworkServiceType> dhcp = null;
+            
+			Iterator<JAXBElement<? extends NetworkServiceType>> GWNEtserit = gatewayFeatures.getNetworkService().iterator();
+			while (GWNEtserit.hasNext())
+			{
+				JAXBElement<? extends NetworkServiceType> NetserviceType = GWNEtserit.next();
+			//NetserviceType.getValue().
+			switch (NetserviceType.getDeclaredType().getSimpleName()){
+			case "GatewayDhcpServiceType":
+				  dhcp = NetserviceType;
+				
+				break;}
+			}
+			NetworkServiceType dhcpService = dhcp.getValue();
+			//DhcpServiceType dhcpService = new DhcpServiceType();
+			dhcpService.setIsEnabled(false);
+ 			//JAXBElement<DhcpServiceType> dhcp = objectFactory.createDhcpService(dhcpService);
+			gatewayFeatures.getNetworkService().add(dhcp); 
+			edgegw.configureServices(gatewayFeatures).waitForTask(100000000, 10000);
+		}
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+	
+		private static void configureNAT(EdgeGateway edgegw,Vdc vdc, vcloud_param vcloud,vApp_Network net,VcloudClient vcloudClient
+				) throws VCloudException, TimeoutException {	
+			
+			
+			//Retrieve previous configuration
+			GatewayFeaturesType gatewayFeatures = edgegw.getResource().getConfiguration().getEdgeGatewayServiceConfiguration();
+			//GatewayFeaturesType gatewayFeatures = new GatewayFeaturesType();
+			ObjectFactory objectFactory = new ObjectFactory();
+			NatServiceType NatSer=null; 
+			Iterator<JAXBElement<? extends NetworkServiceType>> GWNEtserit = gatewayFeatures.getNetworkService().iterator();
+			while (GWNEtserit.hasNext())
+			{	
+				
+				JAXBElement<? extends NetworkServiceType> NetserviceType = GWNEtserit.next();
+				//NetserviceType.getValue().
+			switch (NetserviceType.getDeclaredType().getSimpleName()){
+			case "NatServiceType":
+				NatSer = (NatServiceType) NetserviceType.getValue();
+				break;	
+			}
+			
+			}
+			////////////Configure SNAT		
+			
+			//NatServiceType NATServiceType = new NatServiceType();
+			NatSer.setIsEnabled(true);
+			NatSer.setPolicy(NatPolicyType.ALLOWTRAFFIC.value());
+			//NatSer.s
+			
+			GatewayNatRuleType GWDNAtruletype = new GatewayNatRuleType();
+			GWDNAtruletype.setOriginalIp(vcloud.getPrivateaddress());
+			GWDNAtruletype.setOriginalPort("any");
+			GWDNAtruletype.setProtocol("any");
+			
+			if(vcloud.getAccess().compareTo("private")==0)
+			{
+				String ExterneNetadd = edgegw.getResource().getConfiguration().getGatewayInterfaces().getGatewayInterface().iterator().next().getSubnetParticipation().iterator().next().getIpAddress();
+				GWDNAtruletype.setTranslatedIp(ExterneNetadd);
+			}
+			else
+			{
+				GWDNAtruletype.setTranslatedIp(vcloud.getPublicaddress());
+			}				
+			GWDNAtruletype.setTranslatedPort("any");
+			//We supoose that we have one public Network with suballocate pool connected to Edgethe used EDGE gateway
+			ReferenceType NetRef = edgegw.getResource().getConfiguration().getGatewayInterfaces().getGatewayInterface().iterator().next().getNetwork();
+			GWDNAtruletype.setInterface(NetRef);			
+			NatRuleType dnatrule = new NatRuleType();
+			dnatrule.setIsEnabled(true);
+			dnatrule.setRuleType(NatPolicyType.ALLOWTRAFFIC.value());
+			dnatrule.setRuleType("SNAT");
+			dnatrule.setGatewayNatRule(GWDNAtruletype);
+			
+			List<NatRuleType> Natrules = NatSer.getNatRule();
+			Natrules.add(dnatrule);
+			
+            ////////////Configure DNAT if we have public access
+			if(vcloud.getAccess().compareTo("public")==0)			
+			{
+				GatewayNatRuleType GWSNAtruletype = new GatewayNatRuleType();
+				GWSNAtruletype.setOriginalIp(vcloud.getPublicaddress());
+				GWSNAtruletype.setOriginalPort("any");
+				GWSNAtruletype.setProtocol("any");
+				GWSNAtruletype.setTranslatedIp(vcloud.getPrivateaddress());
+				GWSNAtruletype.setTranslatedPort("any");
+				//ReferenceType NetRef2 = vdc.getAvailableNetworkRefByName(net.getvAppNetName1());
+				GWSNAtruletype.setInterface(NetRef);
+				NatRuleType snatrule = new NatRuleType();
+				snatrule.setIsEnabled(true);
+				snatrule.setRuleType(NatPolicyType.ALLOWTRAFFIC.value());
+				snatrule.setRuleType("DNAT");
+				snatrule.setGatewayNatRule(GWSNAtruletype);
+				Natrules.add(snatrule);
+			}
+			
+			JAXBElement<NetworkServiceType> serviceType = objectFactory.createNetworkService(NatSer);
+			gatewayFeatures.getNetworkService().add(serviceType);
+			edgegw.configureServices(gatewayFeatures).waitForTask(100000000, 10000);
+			
+		}
+	
+	
+	
+	
+		private static void configureFirewall(EdgeGateway edgegw, vcloud_param vcloud) throws VCloudException, TimeoutException {	
+			
+			//retreive previous configuration
+			GatewayFeaturesType gatewayFeatures = edgegw.getResource().getConfiguration().getEdgeGatewayServiceConfiguration();
+			ObjectFactory objectFactory = new ObjectFactory();
+			
+			FirewallServiceType firewallServiceType=null; 
+			Iterator<JAXBElement<? extends NetworkServiceType>> GWNEtserit = gatewayFeatures.getNetworkService().iterator();
+			while (GWNEtserit.hasNext())
+			{	
+				
+				JAXBElement<? extends NetworkServiceType> NetserviceType = GWNEtserit.next();
+				//NetserviceType.getValue().
+			switch (NetserviceType.getDeclaredType().getSimpleName()){
+			case "FirewallServiceType":
+				firewallServiceType = (FirewallServiceType) NetserviceType.getValue();
+				break;	
+			}}
+			
+			//Configure Firewall
+			//FirewallServiceType firewallServiceType = new FirewallServiceType();
+			firewallServiceType.setIsEnabled(true);
+			firewallServiceType.setDefaultAction(FirewallPolicyType.DROP.value());
+			firewallServiceType.setLogDefaultAction(false);
+			List<FirewallRuleType> fwRules = firewallServiceType.getFirewallRule();
+
+			//load firewall rules
+			LinkedList<FirewallRule> FirewallRulles =new LinkedList<>();
+			FirewallRulles= parseFirewallRulles(vcloud.getFWrules()); // setting firewall rules
+
+			Iterator<FirewallRule> aux = FirewallRulles.iterator();
+			while (aux.hasNext())
+			{
+				FirewallRule rule = aux.next();
+				if(rule.getRange().compareTo("0.0.0.0/0")==0)
+					rule.setRange("external");
+				
+				if(rule.getFromport().compareTo(rule.getToport())==0 )
+				{
+		        addFirewallRule(fwRules,rule.getName().toUpperCase(),rule.getProtocol().toUpperCase(),
+							rule.getRange(), vcloud.getPublicaddress(),rule.getFromport(),FirewallPolicyType.ALLOW.value());
+				}
+				else
+				{/*int i=0;
+				while ((Integer.decode(rule.getFromport())+i) <= Integer.decode(rule.getToport()))
+				{
+					addFirewallRule(fwRules,rule.getName().toUpperCase(),rule.getProtocol().toUpperCase(),
+							rule.getRange(), vcloud.getPublicaddress(), Integer.toString(Integer.decode(rule.getFromport())+i),FirewallPolicyType.ALLOW.value());
+					i++;
+				}*/
+					String DestportRange=rule.getFromport().toString()+"-"+rule.getToport().toString();
+			        addFirewallRule(fwRules,rule.getName().toUpperCase(),rule.getProtocol().toUpperCase(),
+									rule.getRange(), vcloud.getPublicaddress(),DestportRange,FirewallPolicyType.ALLOW.value());
+				}
+			}
+
+			//Add Internal-external access
+			addFirewallRule(fwRules, "In-Out", "ANY", vcloud.getPrivateaddress(), "external", "Any",FirewallPolicyType.ALLOW.value());
+			JAXBElement<FirewallServiceType> firewall = objectFactory.createFirewallService(firewallServiceType);
+			gatewayFeatures.getNetworkService().add(firewall);			
+			edgegw.configureServices(gatewayFeatures).waitForTask(100000000, 10000);;			
+		}	
+	
 
 }
 

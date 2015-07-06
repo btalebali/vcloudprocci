@@ -9,15 +9,26 @@ public class TestVC_CLIENT {
 		// TODO Auto-generated method stub
 	
 		
-		
+//For PROlogue's Internal vCloud Director		
 		Object[] argsvCconfig= new Object[5];
 		argsvCconfig[0]  = "https://172.17.117.108/";   // URL
 		argsvCconfig[1]  = "uicbm";                     // user
-		argsvCconfig[2]  = "prologue";	                // organisation 
+		argsvCconfig[2]  = "prologue";	                // Organization 
 		argsvCconfig[3]  = "u15i21cb21m0";              //password
-		argsvCconfig[4]  = "5.1"; //1.5 // 5.5 //allowed parametres
+		argsvCconfig[4]  = "5.1"; //1.5 // 5.5		    //allowed parameters
 
-		Object[] argsvCloud= new Object[20];		
+/*		
+// For Alhambra's vCloud Director		
+		Object[] argsvCconfig= new Object[5];
+		argsvCconfig[0]  = "https://clouddemo.a-e.es/";   // URL
+		argsvCconfig[1]  = "adminco";                     // user
+		argsvCconfig[2]  = "prologue";	                // organization 
+		argsvCconfig[3]  = "prologue";              //password
+		argsvCconfig[4]  = "5.1"; //1.5 // 5.5 //allowed parameters
+*/		
+		
+		
+		Object[] argsvCloud= new Object[21];		
 		// user,password,organization,vDC,host,version,image,VMname,VMid,hostname,password,flavor,label,firewallrules,
 		// profile,access,private_address,public_address, MAC address, VMstatus		
 		
@@ -25,15 +36,15 @@ public class TestVC_CLIENT {
 		argsvCloud[1]  = "vDC_prologue";  							//vDC,
 		argsvCloud[2]  = "Linux";  									//catalogue
 		argsvCloud[3]  ="Ubuntu12.04 x86_64";         				//vApptemplate
-		argsvCloud[4]  = "VM1";   	              				//vApp name
+		argsvCloud[4]  = "VM01";   	              				//vApp name
 		argsvCloud[5]  = "urn:vcloud:vm:7c1a5933-f718-4e9c-be95-7f7e815d7426";	//vAppId of the VM in vCloud platform,						                        
 		argsvCloud[6]  = "uicbm";					                            //hostname,
-		argsvCloud[7] = "prologue";					                        //rootpass,
-		argsvCloud[8] = "1";				 	                        //cpu(N° vcpu)	
-		argsvCloud[9] = "2";				 	                        //ram (GHz)
-		argsvCloud[10] = "40";				 	                        //disc(Go)
-		argsvCloud[11] = "EdgeGw";				 	                        //EdgeGateway
-		argsvCloud[12] = "net1:10.10.10.0/16:subnet1:10.0.0.0/24:8.8.8.8"; //label for network
+		argsvCloud[7]  = "";					                        //rootpass,
+		argsvCloud[8]  = "1";				 	                        //cpu(N° vcpu)	
+		argsvCloud[9]  = "2048";				 	                        //ram (MHz) foe exemple 2048
+		argsvCloud[10] = "32";				 	                        //disc(Go)
+		argsvCloud[11] = "EdgeGW";				 	                        //EdgeGateway
+		argsvCloud[12] = "net01:30.10.1.0/16:subnet1:30.0.1.0/24:8.8.8.8"; //label for network
 		
 		argsvCloud[13] = "cosacs:8286:8286:tcp:0.0.0.0/0:inout*"
     				+ "http:80:80:tcp:0.0.0.0/0:inout*"
@@ -43,12 +54,13 @@ public class TestVC_CLIENT {
 			        + "ssh:22:22:tcp:0.0.0.0/0:inout*"
 			        + "ACCORDS:8000:8005:tcp:0.0.0.0/0:inout";  // security group for this VM
 		
-		argsvCloud[14] = "private";              //access 		
+		argsvCloud[14] = "public";              //access 		
 		argsvCloud[15] = "notset";               //private address
 		argsvCloud[16] = "notset";               //public address
 		argsvCloud[17] = "notset";               //MAC address
 		argsvCloud[18] = "notset";               //VM status
 		argsvCloud[19] = "notset";               //Agent status
+		argsvCloud[20] = "notset";				// message
 		
 
 		
@@ -67,7 +79,7 @@ public class TestVC_CLIENT {
 		
 		Object[] aux = new Object[6];;		
 		aux=argsvCconfig;
-		aux = append(aux, argsvCloud);
+		aux = append(aux, argsvCloud[1]);
 		
 		//String[] vApptemplate = (String[]) ManageIaaS.get_vApptemplatepervDC(aux);
 		
@@ -82,10 +94,11 @@ public class TestVC_CLIENT {
 
 		//String[] vApps = (String[]) ManageIaaS.get_vAppspervDC(aux);
 		//System.out.println(vApps.length);	
-	
-		Object[] aux2 = new Object[5];		
-		aux=argsvCconfig;
-		aux = append(aux, argsvCloud);	
+		
+		//Get external Network
+		//String[] ExternalNetworks = (String[]) ManageIaaS.get_vDCORGNetworks(aux);
+		//System.out.println(ExternalNetworks.length);	
+
 		
 
 
@@ -113,9 +126,13 @@ public class TestVC_CLIENT {
  // (2)    suspended
  // (0)    stopped
 		
-				
+		Object[] aux2 = new Object[26];		
+		aux2 = concatenateTAB(argsvCconfig, argsvCloud);				
+
 		
-		ManageIaaS.create_server(aux2);
+		
+		 Object outputs = ManageIaaS.create_server(aux2);
+		System.out.println(outputs.toString());
 		//Procci.stop_server(args); 
 
 		//Procci.restart_server(args); // hardreboot
@@ -133,11 +150,27 @@ public class TestVC_CLIENT {
 
 }
 	
+	
+	
+	
+	
 	static <T> T[] append(T[] arr, T element) {
 	    final int N = arr.length;
 	    arr = Arrays.copyOf(arr, N + 1);
 	    arr[N] = element;
 	    return arr;
-	}	
+	}
+	
+	static public <T> T[] concatenateTAB (T[] a, T[] b) {
+	    int aLen = a.length;
+	    int bLen = b.length;
+
+	    @SuppressWarnings("unchecked")
+	    T[] c = (T[]) Array.newInstance(a.getClass().getComponentType(), aLen+bLen);
+	    System.arraycopy(a, 0, c, 0, aLen);
+	    System.arraycopy(b, 0, c, aLen, bLen);
+
+	    return c;
+	}
 	
 }
