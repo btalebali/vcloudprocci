@@ -9,23 +9,23 @@ public class TestVC_CLIENT {
 		// TODO Auto-generated method stub
 	
 		
-//For PROlogue's Internal vCloud Director		
+/*//For PROlogue's Internal vCloud Director		
 		Object[] argsvCconfig= new Object[5];
 		argsvCconfig[0]  = "https://172.17.117.108/";   // URL
 		argsvCconfig[1]  = "uicbm";                     // user
 		argsvCconfig[2]  = "prologue";	                // Organization 
 		argsvCconfig[3]  = "u15i21cb21m0";              //password
 		argsvCconfig[4]  = "5.1"; //1.5 // 5.5		    //allowed parameters
-
-/*		
+*/
+		
 // For Alhambra's vCloud Director		
 		Object[] argsvCconfig= new Object[5];
 		argsvCconfig[0]  = "https://clouddemo.a-e.es/";   // URL
 		argsvCconfig[1]  = "adminco";                     // user
-		argsvCconfig[2]  = "prologue";	                // organization 
+		argsvCconfig[2]  = "PROLOGUE";	                // organization 
 		argsvCconfig[3]  = "prologue";              //password
 		argsvCconfig[4]  = "5.1"; //1.5 // 5.5 //allowed parameters
-*/		
+	
 		
 		
 		Object[] argsvCloud= new Object[21];		
@@ -33,27 +33,27 @@ public class TestVC_CLIENT {
 		// profile,access,private_address,public_address, MAC address, VMstatus		
 		
 		argsvCloud[0]  = "instanceid";   				            // VM id 
-		argsvCloud[1]  = "vDC_prologue";  							//vDC,
+		argsvCloud[1]  = "vDC-PROLOGUE-CLOUDPORT";//"vDC_prologue";  							//vDC,
 		argsvCloud[2]  = "Linux";  									//catalogue
-		argsvCloud[3]  ="Ubuntu12.04 x86_64";         				//vApptemplate
-		argsvCloud[4]  = "VM10";   	              				//vApp name
+		argsvCloud[3]  ="Ubuntu12.04 x86_64";//"Ubuntu12.04 x86_64";         				//vApptemplate
+		argsvCloud[4]  = "VM04";   	              				//vApp name
 		argsvCloud[5]  = "urn:vcloud:vm:7c1a5933-f718-4e9c-be95-7f7e815d7426";	//vAppId of the VM in vCloud platform,						                        
 		argsvCloud[6]  = "uicbm";					                            //hostname,
 		argsvCloud[7]  = "azdFgtpld";					                        //rootpass, if null , we generate a random rootpass
 		argsvCloud[8]  = "1";				 	                        //cpu(N° vcpu)	
 		argsvCloud[9]  = "512";				 	                        //ram (MHz) foe exemple 2048
 		argsvCloud[10] = "16";				 	                        //disc(Go)
-		argsvCloud[11] = "EdgeGW";				 	                        //EdgeGateway
-		argsvCloud[12] = "vLAN01:10.10.10.0/24:subnet1:10.10.10.128/26:8.8.4.4"; //label for network
+		argsvCloud[11] = "EDG-INET01";  //"EdgeGW";				 	                        //EdgeGateway
+		argsvCloud[12] = "vLAN01:20.10.10.0/24:subnet1:20.10.10.128/26:8.8.4.4"; //label for network
 		
-		argsvCloud[13] = "cosacs:8286:8286:tcp:172.17.161.30/32:inout*"
-    				//+ "http:80:80:tcp:0.0.0.0/0:inout*"
-    				//+ "proxy:8080:8080:tcp:0.0.0.0/0:inout*"
+		argsvCloud[13] = "cosacs:8286:8286:tcp:0.0.0.0/0:inout*"
+    				+ "http:80:80:tcp:0.0.0.0/0:inout*"
+    				+ "proxy:8080:8080:tcp:0.0.0.0/0:inout*"
 				    + "https:434:434:tcp:0.0.0.0/0:inout*"
 			        + "ping:-1:-1:icmp:0.0.0.0/0:inout*"
-			        + "ssh:22:22:tcp:172.17.161.30/32:inout*"
-		            + "RDP:3389:3389:tcp:172.17.161.30/32:inout*";
-		//+ "ACCORDS:8000:8005:tcp:0.0.0.0/0:inout";  // security group for this VM
+			        + "ssh:22:22:tcp:0.0.0.0/0:inout*"
+		            + "RDP:3389:3389:tcp:172.17.161.30/32:inout*"
+					+ "ACCORDS:8000:8005:tcp:0.0.0.0/0:inout";  // security group for this VM
 		
 		argsvCloud[14] = "private";              //access 		
 		argsvCloud[15] = "notset";               //private address
@@ -85,7 +85,7 @@ public class TestVC_CLIENT {
 		
 		
 		//String[] vDCORGs = (String[]) ManageIaaS.get_vDCORGpervDC(aux);
-		//System.out.println(vDCORGs[0]);	
+		//System.out.println(vDCORGs[1]);	
 		
 
 		//String[] vApps = (String[]) ManageIaaS.get_vAppspervDC(aux);
@@ -113,21 +113,15 @@ public class TestVC_CLIENT {
  *  but is undeployed, it is in inconsistent state. MIXED(10) - 
  *  vApp status is set to MIXED when the VMs in the vApp are in different power states.
  * */
-
-
-// state for ACCORDS
- // (1)    power on
- // (4)    deployment error
- // (8)    En cours d'exécution des actions
- // (2)    suspended
- // (0)    stopped
+		
+		
 		
 		Object[] aux2 = new Object[26];		
 		aux2 = concatenateTAB(argsvCconfig, argsvCloud);				
 
 		
 		
-		 Object outputs = ManageIaaS.create_server(aux2);
+		Object outputs = ManageIaaS.create_server(aux2);
 		System.out.println(outputs.toString());
 
 

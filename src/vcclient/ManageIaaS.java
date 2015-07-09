@@ -1920,7 +1920,6 @@ public class ManageIaaS {
 		{
 			String name=vAppRefit.next().getName();
 			list.add(name);
-			System.out.println(name);
 		}
 		String[] vApps = new String[list.size()];
 		vApps = list.toArray(vApps);
