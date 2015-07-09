@@ -1,6 +1,6 @@
 /*
  * *******************************************************
- * Copyright VMware, Inc. 2010-2013.  All Rights Reserved.
+ * Copyright VMware, Inc. 2010-package com.vmware.vcloud.sdk.samples;2013.  All Rights Reserved.
  * *******************************************************
  *
  * DISCLAIMER. THIS PROGRAM IS PROVIDED TO YOU "AS IS" WITHOUT
@@ -9,7 +9,7 @@
  * WARRANTIES OR CONDITIONS OF MERCHANTABILITY, SATISFACTORY # QUALITY,
  * NON-INFRINGEMENT AND FITNESS FOR A PARTICULAR PURPOSE.
  */
-package com.vmware.vcloud.sdk.samples;
+package examples;
 
 import java.io.IOException;
 import java.security.KeyManagementException;

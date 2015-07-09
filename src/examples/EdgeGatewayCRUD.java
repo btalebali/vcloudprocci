@@ -10,7 +10,7 @@
  * NON-INFRINGEMENT AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-package com.vmware.vcloud.sdk.samples;
+package examples;
 
 import java.io.IOException;
 import java.security.KeyManagementException;

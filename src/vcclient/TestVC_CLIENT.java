@@ -32,29 +32,30 @@ public class TestVC_CLIENT {
 		// user,password,organization,vDC,host,version,image,VMname,VMid,hostname,password,flavor,label,firewallrules,
 		// profile,access,private_address,public_address, MAC address, VMstatus		
 		
-		argsvCloud[0]  = "instanceid";   				// VM id 
+		argsvCloud[0]  = "instanceid";   				            // VM id 
 		argsvCloud[1]  = "vDC_prologue";  							//vDC,
 		argsvCloud[2]  = "Linux";  									//catalogue
 		argsvCloud[3]  ="Ubuntu12.04 x86_64";         				//vApptemplate
-		argsvCloud[4]  = "VM01";   	              				//vApp name
+		argsvCloud[4]  = "VM10";   	              				//vApp name
 		argsvCloud[5]  = "urn:vcloud:vm:7c1a5933-f718-4e9c-be95-7f7e815d7426";	//vAppId of the VM in vCloud platform,						                        
 		argsvCloud[6]  = "uicbm";					                            //hostname,
-		argsvCloud[7]  = "";					                        //rootpass,
+		argsvCloud[7]  = "azdFgtpld";					                        //rootpass, if null , we generate a random rootpass
 		argsvCloud[8]  = "1";				 	                        //cpu(N° vcpu)	
-		argsvCloud[9]  = "2048";				 	                        //ram (MHz) foe exemple 2048
-		argsvCloud[10] = "32";				 	                        //disc(Go)
+		argsvCloud[9]  = "512";				 	                        //ram (MHz) foe exemple 2048
+		argsvCloud[10] = "16";				 	                        //disc(Go)
 		argsvCloud[11] = "EdgeGW";				 	                        //EdgeGateway
-		argsvCloud[12] = "net01:30.10.1.0/16:subnet1:30.0.1.0/24:8.8.8.8"; //label for network
+		argsvCloud[12] = "vLAN01:10.10.10.0/24:subnet1:10.10.10.128/26:8.8.4.4"; //label for network
 		
-		argsvCloud[13] = "cosacs:8286:8286:tcp:0.0.0.0/0:inout*"
-    				+ "http:80:80:tcp:0.0.0.0/0:inout*"
-    				+ "proxy:8080:8080:tcp:0.0.0.0/0:inout*"
+		argsvCloud[13] = "cosacs:8286:8286:tcp:172.17.161.30/32:inout*"
+    				//+ "http:80:80:tcp:0.0.0.0/0:inout*"
+    				//+ "proxy:8080:8080:tcp:0.0.0.0/0:inout*"
 				    + "https:434:434:tcp:0.0.0.0/0:inout*"
 			        + "ping:-1:-1:icmp:0.0.0.0/0:inout*"
-			        + "ssh:22:22:tcp:0.0.0.0/0:inout*"
-			        + "ACCORDS:8000:8005:tcp:0.0.0.0/0:inout";  // security group for this VM
+			        + "ssh:22:22:tcp:172.17.161.30/32:inout*"
+		            + "RDP:3389:3389:tcp:172.17.161.30/32:inout*";
+		//+ "ACCORDS:8000:8005:tcp:0.0.0.0/0:inout";  // security group for this VM
 		
-		argsvCloud[14] = "public";              //access 		
+		argsvCloud[14] = "private";              //access 		
 		argsvCloud[15] = "notset";               //private address
 		argsvCloud[16] = "notset";               //public address
 		argsvCloud[17] = "notset";               //MAC address
@@ -64,11 +65,6 @@ public class TestVC_CLIENT {
 		
 
 		
-		
-		
-		
-		
-
 
 		
 		//String[] catalogues = (String[]) ManageIaaS.get_catalogues(argsvCconfig);
@@ -96,8 +92,8 @@ public class TestVC_CLIENT {
 		//System.out.println(vApps.length);	
 		
 		//Get external Network
-		//String[] ExternalNetworks = (String[]) ManageIaaS.get_vDCORGNetworks(aux);
-		//System.out.println(ExternalNetworks.length);	
+		//String[] vDCORGNetworks = (String[]) ManageIaaS.get_vDCORGNetworks(aux);
+		//System.out.println(vDCORGNetworks.length);	
 
 		
 
@@ -133,16 +129,19 @@ public class TestVC_CLIENT {
 		
 		 Object outputs = ManageIaaS.create_server(aux2);
 		System.out.println(outputs.toString());
+
+
 		//Procci.stop_server(args); 
 
 		//Procci.restart_server(args); // hardreboot
-				
-		//Procci.delete_server(args);		
-        
+						
 	    //Procci.suspend_server(args);
         
 	    //Procci.resume_server(args);
          
+		//Procci.delete_server(args);
+		
+		
         ///// reseting Virtual Machine /////
         //As with physical computers, you may need to reset a guest operating system that has become unresponsive. 
 	    //This is generally not recommended: If you reset a virtual machine while the virtual disk is being written to, data may be lost or corrupted.

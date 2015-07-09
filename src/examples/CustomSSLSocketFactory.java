@@ -9,7 +9,7 @@
  * WARRANTIES OR CONDITIONS OF MERCHANTABILITY, SATISFACTORY # QUALITY,
  * NON-INFRINGEMENT AND FITNESS FOR A PARTICULAR PURPOSE.
  */
-package com.vmware.vcloud.sdk.samples;
+package examples;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;

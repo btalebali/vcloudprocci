@@ -1,4 +1,4 @@
-package com.vmware.vcloud.sdk.samples;
+package examples;
 /*
  * *******************************************************
  * Copyright VMware, Inc. 2010-2013.  All Rights Reserved.
